@@ -1,4 +1,4 @@
-"""FocusFlow — independent cross-platform starter application."""
+"""FocusFlow — responsive cross-platform starter application."""
 from datetime import datetime
 from pathlib import Path
 import sqlite3
@@ -6,6 +6,7 @@ import sqlite3
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.lang import Builder
+from kivy.metrics import dp
 from kivy.properties import BooleanProperty, NumericProperty, StringProperty
 from kivy.uix.boxlayout import BoxLayout
 
@@ -16,118 +17,170 @@ DB_PATH = APP_DIR / "focusflow.sqlite3"
 KV = r"""
 <FocusRoot>:
     orientation: "vertical"
-    padding: "20dp"
-    spacing: "14dp"
     canvas.before:
         Color:
             rgba: 0.055, 0.075, 0.12, 1
         Rectangle:
             pos: self.pos
             size: self.size
-    BoxLayout:
-        size_hint_y: None
-        height: "48dp"
-        Label:
-            text: "[b]FocusFlow[/b]"
-            markup: True
-            font_size: "25sp"
-            halign: "left"
-            color: 0.92, 0.95, 1, 1
-        Label:
-            text: "FOCUS • PLAN • GROW"
-            font_size: "10sp"
-            color: 0.48, 0.75, 0.92, 1
-            halign: "right"
-    BoxLayout:
-        orientation: "vertical"
-        padding: "18dp"
-        spacing: "12dp"
-        canvas.before:
-            Color:
-                rgba: 0.10, 0.13, 0.20, 1
-            RoundedRectangle:
-                pos: self.pos
-                size: self.size
-                radius: [18]
-        Label:
-            text: root.mode
-            size_hint_y: None
-            height: "28dp"
-            color: 0.55, 0.78, 0.96, 1
-            font_size: "14sp"
-        Label:
-            text: root.time_text
-            font_size: "56sp"
-            bold: True
-            color: 1, 1, 1, 1
-        Label:
-            text: "A little progress, consistently."
-            size_hint_y: None
-            height: "24dp"
-            color: 0.65, 0.70, 0.80, 1
-        BoxLayout:
-            size_hint_y: None
-            height: "48dp"
-            spacing: "10dp"
-            Button:
-                text: "Start" if not root.running else "Pause"
-                on_release: root.toggle_timer()
-                background_normal: ""
-                background_color: 0.18, 0.55, 0.78, 1
-            Button:
-                text: "Reset"
-                on_release: root.reset_timer()
-                background_normal: ""
-                background_color: 0.22, 0.27, 0.37, 1
-    BoxLayout:
-        size_hint_y: None
-        height: "38dp"
-        Label:
-            text: "[b]Today's tasks[/b]"
-            markup: True
-            font_size: "18sp"
-            halign: "left"
-            color: 0.92, 0.95, 1, 1
-        Label:
-            text: "Saved on this device"
-            font_size: "11sp"
-            halign: "right"
-            color: 0.55, 0.62, 0.72, 1
-    BoxLayout:
-        size_hint_y: None
-        height: "44dp"
-        spacing: "8dp"
-        TextInput:
-            id: task_input
-            hint_text: "Add a task..."
-            multiline: False
-            padding: ["12dp", "10dp"]
-            background_color: 0.12, 0.16, 0.23, 1
-            foreground_color: 1, 1, 1, 1
-            hint_text_color: 0.55, 0.60, 0.70, 1
-        Button:
-            text: "Add"
-            size_hint_x: None
-            width: "76dp"
-            on_release:
-                root.add_task(task_input.text)
-                task_input.text = ""
-            background_normal: ""
-            background_color: 0.20, 0.48, 0.38, 1
+
     ScrollView:
         do_scroll_x: False
+        bar_width: dp(5)
         GridLayout:
-            id: task_list
+            id: page_content
             cols: 1
             size_hint_y: None
             height: self.minimum_height
-            spacing: "6dp"
-    Label:
-        text: "FocusFlow starter • Offline-first • More features planned"
-        size_hint_y: None
-        height: "24dp"
-        font_size: "10sp"
-        color: 0.45, 0.52, 0.63, 1
+            padding: [dp(20) if root.width >= dp(600) else dp(12), dp(12)]
+            spacing: dp(12)
+
+            # Header
+            BoxLayout:
+                size_hint_y: None
+                height: dp(48)
+                spacing: dp(8)
+                Label:
+                    text: "[b]FocusFlow[/b]"
+                    markup: True
+                    font_size: dp(25) if root.width >= dp(420) else dp(21)
+                    halign: "left"
+                    valign: "middle"
+                    text_size: self.size
+                    color: 0.92, 0.95, 1, 1
+                Label:
+                    text: "" if root.width < dp(420) else "FOCUS • PLAN • GROW"
+                    size_hint_x: 0.9
+                    font_size: dp(10)
+                    color: 0.48, 0.75, 0.92, 1
+                    halign: "right"
+                    valign: "middle"
+                    text_size: self.size
+
+            # Focus timer card. Its minimum height prevents controls and labels
+            # from colliding in a short, restored desktop window.
+            BoxLayout:
+                orientation: "vertical"
+                size_hint_y: None
+                height: max(dp(300), root.height * 0.40)
+                padding: [dp(18) if root.width >= dp(600) else dp(12), dp(14)]
+                spacing: dp(8)
+                canvas.before:
+                    Color:
+                        rgba: 0.10, 0.13, 0.20, 1
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [dp(18)]
+
+                Label:
+                    text: root.mode
+                    size_hint_y: None
+                    height: dp(28)
+                    color: 0.55, 0.78, 0.96, 1
+                    font_size: dp(14)
+
+                Label:
+                    text: root.time_text
+                    font_size: min(dp(56), max(dp(36), root.width * 0.085))
+                    bold: True
+                    color: 1, 1, 1, 1
+                    halign: "center"
+                    valign: "middle"
+                    text_size: self.size
+
+                Label:
+                    text: "A little progress, consistently."
+                    size_hint_y: None
+                    height: dp(24)
+                    color: 0.65, 0.70, 0.80, 1
+                    font_size: dp(14)
+
+                BoxLayout:
+                    orientation: "vertical" if root.width < dp(520) else "horizontal"
+                    size_hint_y: None
+                    height: dp(104) if root.width < dp(520) else dp(48)
+                    spacing: dp(8)
+                    Button:
+                        text: "Pause" if root.running else "Start"
+                        size_hint_y: None
+                        height: dp(48)
+                        on_release: root.toggle_timer()
+                        background_normal: ""
+                        background_color: 0.18, 0.55, 0.78, 1
+                    Button:
+                        text: "Reset"
+                        size_hint_y: None
+                        height: dp(48)
+                        on_release: root.reset_timer()
+                        background_normal: ""
+                        background_color: 0.22, 0.27, 0.37, 1
+
+            # Tasks heading
+            BoxLayout:
+                size_hint_y: None
+                height: dp(38)
+                spacing: dp(8)
+                Label:
+                    text: "[b]Today's tasks[/b]"
+                    markup: True
+                    font_size: dp(18)
+                    halign: "left"
+                    valign: "middle"
+                    text_size: self.size
+                    color: 0.92, 0.95, 1, 1
+                Label:
+                    text: "" if root.width < dp(420) else "Saved on this device"
+                    size_hint_x: 1.1
+                    font_size: dp(11)
+                    halign: "right"
+                    valign: "middle"
+                    text_size: self.size
+                    color: 0.55, 0.62, 0.72, 1
+
+            # Task entry switches to a vertical arrangement on narrow windows.
+            BoxLayout:
+                orientation: "vertical" if root.width < dp(520) else "horizontal"
+                size_hint_y: None
+                height: dp(96) if root.width < dp(520) else dp(44)
+                spacing: dp(8)
+                TextInput:
+                    id: task_input
+                    hint_text: "Add a task..."
+                    multiline: False
+                    padding: [dp(12), dp(10)]
+                    background_color: 0.12, 0.16, 0.23, 1
+                    foreground_color: 1, 1, 1, 1
+                    hint_text_color: 0.55, 0.60, 0.70, 1
+                    on_text_validate:
+                        root.add_task(self.text)
+                        self.text = ""
+                Button:
+                    text: "Add"
+                    size_hint_x: None if root.width >= dp(520) else 1
+                    width: dp(76) if root.width >= dp(520) else self.parent.width
+                    size_hint_y: None
+                    height: dp(44)
+                    on_release:
+                        root.add_task(task_input.text)
+                        task_input.text = ""
+                    background_normal: ""
+                    background_color: 0.20, 0.48, 0.38, 1
+
+            # Task rows grow naturally; the outer page scrolls when needed.
+            GridLayout:
+                id: task_list
+                cols: 1
+                size_hint_y: None
+                height: self.minimum_height
+                spacing: dp(6)
+
+            Label:
+                text: "FocusFlow starter • Offline-first • More features planned"
+                size_hint_y: None
+                height: dp(24)
+                font_size: dp(10)
+                color: 0.45, 0.52, 0.63, 1
 """
 
 class FocusRoot(BoxLayout):
@@ -140,12 +193,14 @@ class FocusRoot(BoxLayout):
         super().__init__(**kwargs)
         self._event = None
         self.db = sqlite3.connect(str(DB_PATH))
-        self.db.execute("""CREATE TABLE IF NOT EXISTS tasks (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            completed INTEGER NOT NULL DEFAULT 0,
-            created_at TEXT NOT NULL
-        )""")
+        self.db.execute(
+            """CREATE TABLE IF NOT EXISTS tasks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                completed INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL
+            )"""
+        )
         self.db.commit()
         Clock.schedule_once(lambda _dt: self.refresh_tasks(), 0)
 
@@ -205,28 +260,48 @@ class FocusRoot(BoxLayout):
         rows = self.db.execute(
             "SELECT id, title, completed FROM tasks ORDER BY id DESC"
         ).fetchall()
+
         for task_id, title, completed in rows:
-            row = BoxLayout(size_hint_y=None, height="42dp", spacing="8dp",
-                            padding=("8dp", "2dp"))
+            row = BoxLayout(
+                size_hint_y=None, height=dp(44), spacing=dp(8),
+                padding=(dp(8), dp(2)),
+            )
             with row.canvas.before:
                 Color(0.12, 0.16, 0.23, 1)
-                RoundedRectangle(pos=row.pos, size=row.size, radius=[8])
-            row.bind(pos=lambda w, _v: setattr(w.canvas.before.children[-1], "pos", w.pos))
-            row.bind(size=lambda w, _v: setattr(w.canvas.before.children[-1], "size", w.size))
-            check = CheckBox(active=bool(completed), size_hint_x=None, width="38dp")
-            check.bind(active=lambda _w, value, tid=task_id: self.set_task_done(tid, value))
-            label = Label(text=title, halign="left", valign="middle",
-                          color=(0.55, 0.62, 0.72, 1) if completed else (0.92, 0.95, 1, 1))
-            label.bind(size=lambda w, _v: setattr(w, "text_size", w.size))
+                background = RoundedRectangle(
+                    pos=row.pos, size=row.size, radius=[dp(8)]
+                )
+            row.bind(
+                pos=lambda widget, _value, bg=background: setattr(bg, "pos", widget.pos),
+                size=lambda widget, _value, bg=background: setattr(bg, "size", widget.size),
+            )
+
+            check = CheckBox(active=bool(completed), size_hint_x=None, width=dp(38))
+            check.bind(
+                active=lambda _widget, value, tid=task_id:
+                    self.set_task_done(tid, value)
+            )
+            label = Label(
+                text=title,
+                halign="left",
+                valign="middle",
+                color=(0.55, 0.62, 0.72, 1) if completed else (0.92, 0.95, 1, 1),
+                shorten=True,
+                shorten_from="right",
+            )
+            label.bind(size=lambda widget, _value: setattr(widget, "text_size", widget.size))
             row.add_widget(check)
             row.add_widget(label)
             container.add_widget(row)
 
     def set_task_done(self, task_id, done):
-        self.db.execute("UPDATE tasks SET completed=? WHERE id=?",
-                        (int(done), task_id))
+        self.db.execute(
+            "UPDATE tasks SET completed=? WHERE id=?",
+            (int(done), task_id),
+        )
         self.db.commit()
         self.refresh_tasks()
+
 
 class FocusFlowApp(App):
     title = "FocusFlow"
@@ -238,6 +313,7 @@ class FocusFlowApp(App):
     def on_stop(self):
         if self.root and hasattr(self.root, "db"):
             self.root.db.close()
+
 
 if __name__ == "__main__":
     FocusFlowApp().run()
